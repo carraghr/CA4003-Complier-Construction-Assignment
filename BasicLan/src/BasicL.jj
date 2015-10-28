@@ -50,6 +50,10 @@ public class BasicLTokeniser{
 		    System.out.println("Identifier");
 		    System.out.println("("+t.image+") ");
 		  }
+		  else if(t.kind == AND){
+		    System.out.println("LETTER");
+		    System.out.println("("+t.image+") ");
+		  }
 		}
 	}
 }
@@ -137,7 +141,23 @@ TOKEN : { < OTHER : ~[]> }/* Anything that is not recognised so far.*/
 void program() : {}
 				 {
 				   decl()
-				   (function())*				 }
+				   (function())*
+				   main_prog()				 }
+
+void decl() :	{}
+				{
+				  (var_decl() | const_decl())*
+				}
+
+void var_decl() : {}
+				{
+				  <VAR> ident_list() <COLON> type() (<COMMA> ident_list() <COLON> type())* <SEMI_COMMA>
+				}
+
+void const_decl() :	{}
+					{
+					  <CONST> <ID> <COLON> type() <EQUALS_SIGN> expression()(<COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression())* <SEMI_COMMA>
+					}
 
 void function() : {}
 				  {
@@ -145,46 +165,61 @@ void function() : {}
 				    <BEGIN>
 				    decl()
 				    (statement() <SEMI_COMMA> )*
+				    <RETURN> (expression()|<EMPTY>) <SEMI_COMMA>
 				    <END>
 				  }
+
 void param_list() :	{}
 					{
-					  (<ID> <COLON> type() (<COMMA> <ID> <COLON> type() )|<EMPTY>/* empty string needed*/ )*					}
+					  (<ID> <COLON> type() (<COMMA> <ID> <COLON> type() )*|<EMPTY>/* empty string needed*/ )*					}
 
-void decl() :	{}
-				{				  (var_decl() | const_decl())*
-				}
-void var_decl() : {}
-				{
-				  <VAR> ident_list() <COLON> type() (<COMMA> ident_list() <COLON> type())* <SEMI_COMMA>				}
-
-void const_decl() :	{}					{
-					  <CONST> <ID> <COLON> type() <EQUALS_SIGN> expression()(<COMMA> <ID> <COLON> type() <EQUALS_SIGN>)*
-					}
-void ident_list() :{}
-				 {
-				   <ID> (<COMMA> <ID>)* 
-				 }
-void type() :	{}
+void type() : {}
 			{
 			  <INT> | <BOOL> | <VOID>
 			}
-			
-void statement() :	{}
-					{
+
+void main_prog() : {}
+				   {
+				     <MAIN>
+				     <BEGIN>
+				     decl()
+				     (statement()<SEMI_COMMA>)*
+				     <END>
+				   }
+
+void statement() : {}
+				   {
 					  <ID> <ASSIGN> expression()
 					| <ID> <LBR> arg_list() <RBR>
+					| <BEGIN> (statement() <SEMI_COMMA> )* <END>
 					| <IF> conditon() <THEN> statement() <ELSE> statement()
-					| <WHILE> condition() <DO> statement()
-					| <EMPTY > //empty string					}
-void arg_list()	{}
-				{
-				   
-				}
+					| <WHILE> conditon() <DO> statement()
+					| <EMPTY> /*Empty String*/
+				   }
+
 void expression() :	{}
 					{
-					  fragment() ( (<PLUS_SIGN>|<MINUS_SIGN>|<MULT_SIGN>|<DIV_SIGN>)fragment())*
+					  fragment() ( (<PLUS_SIGN>|<MINUS_SIGN>|<MULT_SIGN>|<DIV_SIGN>) fragment() )*
+					| <ID> <LBR> arg_list() < RBR>
 					}
-void fragment() : {}				  {
-				    <ID> | < TRUE>|<FALSE>|<NUM>|(<PLUS_SIGN>|< MINUS_SIGN >)fragment()|expression()
+					
+void fragment() : {}
+				  {
+				    <ID>|< TRUE>|<FALSE>|<NUM>| (<PLUS_SIGN>|< MINUS_SIGN >) fragment()| expression()
 				  }
+
+void conditon() : {}
+				   {
+				     <NOT> expression()
+				   	| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>|<AND>|<OR>) expression()
+				   	| <ID>				   }
+
+void ident_list() : {}
+				 {
+				   <ID> (<COMMA> <ID>)* 
+				 }
+
+void arg_list() : {}
+				{
+				   (ident_list()|<EMPTY>)
+				}
