@@ -125,7 +125,7 @@ TOKEN : { <PLUS_SIGN :"+"> /*Operators and relations*/
 		| < LBR : "(">
 		| < RBR : ")">
 		| < COMMA : ",">
-		| < SEMI_COLON : ";">
+		| < SEMI_COMMA : ";">
 		| < COLON : ":">
 		| < ASSIGN : ":=">
 }
@@ -141,66 +141,54 @@ TOKEN : { < OTHER : ~[]> }/* Anything that is not recognised so far.*/
 void program() : {}
 				 {
 				   decl()
-				   function()
+				   (function())*
 				   main_prog()				 }
 
-void decl() :	{}
-				{
-				  decl_type() decl()
-				|{}
-				}
+void decl() : {}
+			  {
+			    decl_type() decl()
+			  | {}
+			  }
 
 void decl_type() : {}
-				 {
-				  var_decl()
-				 |const_decl()				 }
+				   {
+				     var_decl()
+				   | const_decl()				   }
 
 void var_decl() : {}
 				{
-				  <VAR> ident_list() <COLON> type() var_group_decl() <SEMI_COLON>
+				  <VAR> ident_list() <COLON> type() var_decl_linked() <SEMI_COMMA>
 				}
-				
-void var_group_decl() : {}
-					   {
-					     <COMMA> ident_list() <COLON> type() var_group_decl()
-					     |{}
-					   }
+
+void var_decl_linked() : {}
+						 {
+						 	<COMMA> ident_list() <COLON> type() var_decl_linked()
+						 |{}
+						 }
 
 void const_decl() :	{}
 					{
-					  <CONST> <ID> <COLON> type() <EQUALS_SIGN> expression() const_group_decl() <SEMI_COLON>
+					  <CONST> <ID> <COLON> type() <EQUALS_SIGN> expression() <SEMI_COMMA>
 					}
 
-void const_group_decl() : {}
-						{
-						  <COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() const_group_decl()
-						|{}						}
+void const_decl_linked() : {}
+							{
+							  <COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() const_decl_linked()
+							|{}							}					
 
 void function() : {}
 				  {
 				    type() <ID> <LBR> param_list() <RBR>
 				    <BEGIN>
 				    decl()
-				    continuous_statements()
-				    <RETURN> return_type() <SEMI_COLON>
-				    <END> function()
-				  |{}
+				    (statement() <SEMI_COMMA> )*
+				    <RETURN> (expression()|<EMPTY>) <SEMI_COMMA>
+				    <END>
 				  }
-
-void return_type() :{}
-					{
-					  expression()
-					  |{}					}
 
 void param_list() :	{}
 					{
-					  <ID> <COLON> type() param_list_grouped()
-					  |{}					}
-
-void param_list_grouped() : {}
-							{
-							  <COMMA> <ID> <COLON> type() param_list_grouped()
-							| {}							}
+					  (<ID> <COLON> type() (<COMMA> <ID> <COLON> type() )*|<EMPTY>/* empty string needed*/ )*					}
 
 void type() : {}
 			{
@@ -212,7 +200,7 @@ void main_prog() : {}
 				     <MAIN>
 				     <BEGIN>
 				     decl()
-				     continuous_statements()
+				     (statement()<SEMI_COMMA>)*
 				     <END>
 				   }
 
@@ -220,62 +208,67 @@ void statement() : {}
 				   {
 					  <ID> <ASSIGN> expression()
 					| <ID> <LBR> arg_list() <RBR>
-					| <BEGIN> (statement() <SEMI_COLON> )* <END>
+					| <BEGIN> (statement() <SEMI_COMMA> )* <END>
 					| <IF> conditon() <THEN> statement() <ELSE> statement()
 					| <WHILE> conditon() <DO> statement()
-					| {}
+					| <EMPTY> /*Empty String*/
 				   }
-				   
-void continuous_statements() : {}
-								{
-								  statement() <SEMI_COLON> continuous_statements()								| {}								}
 
 void expression() :	{}
 					{
-					  fragment() expression_right_side() /*an expression is one or more */
-					 |expression() expression_right_side()
-					 |<LBR>expression()<RBR> /* (function call or some maths to be done)*/
-					 |<ID> <LBR> arg_list() <RBR> /* Function call*/
+					  fragment() ( (<PLUS_SIGN>|<MINUS_SIGN>|<MULT_SIGN>|<DIV_SIGN>) fragment() )*
+					| <LBR> expression() <RBR>
+					| <ID> <LBR> arg_list() < RBR>
 					}
+					
+void fragment() : {}
+				  {
+				    <ID>|< TRUE>|<FALSE>|<NUM>| (<PLUS_SIGN>|< MINUS_SIGN >) fragment()| expression()
+				  }
 
-void expression_right_side () : {}
-								{
-								 operator() fragment() expression_right_side()
-								|{}
-								}
+/*
 
-void operator() : {}
-				   {
-				   	 <PLUS_SIGN >
-				   | < MINUS_SIGN >
-				   | < MULT_SIGN>
-				   | < DIV_SIGN>				   }
+void expression() :	{}
+					{
+					  fragment more() | expression more() // second case doesn't make sense
+					| <LBR> expression() <RBR>
+					| <ID> <LBR> arg_list() < RBR>
+					}
+Test cases:
+
+(x+1) / 3
+7 + -2+3 = 
+7 +(-2 + 3)
+7 + -(2+3)
+
+(min(x, y) + 1) / 3
+min(x, y) + 1 / 3
+7 + (-min(x, y) + 3)
+7 + -min(x, y) + 3)
+
+
+void more() : {}
+			  {
+			    (<PLUS_SIGN>|<MINUS_SIGN>|<MULT_SIGN>|<DIV_SIGN>) (fragment()|expression()) more()
+			  |{}
+			  }
 
 void fragment() : {}
 				  {
-				     <ID>
-				   | <TRUE>
-				   | <FALSE>
-				   | <NUM>
-				   | side_of_zero() value_or_expression()
+				    <ID>
+				  | <TRUE>
+				  | <FALSE>
+				  | <NUM>
+				  | (<PLUS_SIGN>|<MINUS_SIGN>) ( fragment()| expression() )
 				  }
 
-void value_or_expression(): {}
-							{
-							  fragment() /* This void method leads to ambiguaty */
-							| expression()
-							}
+*/
 
-void side_of_zero() : {}
-					  {
-					    <PLUS_SIGN>
-					   |< MINUS_SIGN>					  }					  
 
 void conditon() : {}
 				   {
 				     <NOT> expression()
-				   	| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
-				   	| conditon() (<AND>|<OR>) conditon()
+				   	| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>|<AND>|<OR>) expression()
 				   	| <ID>				   }
 
 void ident_list() : {}
@@ -287,26 +280,3 @@ void arg_list() : {}
 				{
 				   (ident_list()|<EMPTY>)
 				}
-/*
-expression ::= term expressionPrime
-
-expressionPrime ::= + expression
-				| - expression
-				| {}
-
-term ::= factor termPrime
-
-termPrime ::= * term
-			| / term
-			| {}
-
-factor ::= number
-		| id
-
-*/
-
-
-
-
-
-
