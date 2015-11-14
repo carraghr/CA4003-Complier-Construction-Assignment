@@ -1,0 +1,35 @@
+/* sum_odd.bl
+	sample file designed by myself to test Parser.jj
+*/
+var result:int;
+const N:int = 100;
+bool is_odd (x:int)
+begin
+	var i:int, res:bool;
+	if x / 2 = 0
+	then
+		res := true;
+	else
+		res := false;
+	return res;
+end
+main
+begin
+	var i:int, sum:int;
+	
+	sum := 0;
+	i := 1;
+	
+	while i <= N do
+	begin
+		if is_odd (i)
+		then 
+			sum:= sum + i;
+		else
+			begin
+			end;
+	end;
+	
+	result := sum;
+	
+end
