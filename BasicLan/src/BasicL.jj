@@ -28,10 +28,12 @@ public class BasicLTokeniser{
 		else if(args.length == 1){
 		  try{
 			tokeniser = new BasicLTokeniser(new java.io.FileInputStream(args[0]));
+			tokeniser.program();
 		  }catch(java.io.FileNotFoundException e){
 		    System.err.println("File " + args[0] + " not found");
 		    return;
-		  }
+		  }catch(ParseException e){
+		    e.printStackTrace();		  }
 		}
 		else{
 		  System.out.println("BasicL Tokeniser: Usage is one of:");
@@ -39,21 +41,6 @@ public class BasicLTokeniser{
 		  System.out.println("OR");
 		  System.out.println("java BasicLTokeniser inputfile");
 		  return;
-		}
-
-		for(Token t = getNextToken(); t.kind!=EOF; t = getNextToken()){
-		  if(t.kind == NUM){
-		    System.out.println("Number");
-		    System.out.println("("+t.image+") ");
-		  }
-		  else if(t.kind == ID){
-		    System.out.println("Identifier");
-		    System.out.println("("+t.image+") ");
-		  }
-		  else if(t.kind == AND){
-		    System.out.println("LETTER");
-		    System.out.println("("+t.image+") ");
-		  }
 		}
 	}
 }
@@ -63,17 +50,9 @@ PARSER_END(BasicLTokeniser)
 *	Section 3 - Token Definitions
 *
 *****************************************************/
+
 TOKEN_MGR_DECLS : {
   static int commentNesting = 0;
-}
-TOKEN : {
-    < EMPTY : "" >
-    : MATCH_NON_EMPTY // change state, or infinite matches of the empty string could result
-}
-
-<MATCH_NON_EMPTY>
-TOKEN : {
-    < NON_EMPTY : ~[] >
 }
 
 SKIP : {  " " //Ignoring spaces/tabs/new lines
@@ -142,39 +121,33 @@ void program() : {}
 				 {
 				   decl()
 				   (function())*
-				   main_prog()				 }
+				   main_prog()
+				   {System.out.println("Program");}				 }
 
 void decl() : {}
 			  {
 			    decl_type() decl()
 			  | {}
+			  {System.out.println("decl");}
 			  }
 
 void decl_type() : {}
 				   {
 				     var_decl()
-				   | const_decl()				   }
+				   | const_decl()
+				   {System.out.println("decl_type");}				   }
 
 void var_decl() : {}
 				{
-				  <VAR> ident_list() <COLON> type() var_decl_linked() <SEMI_COMMA>
+				  <VAR> ident_list() <COLON> type() (<COMMA> ident_list() <COLON> type())* <SEMI_COMMA>
+				  {System.out.println("var decl");}
 				}
-
-void var_decl_linked() : {}
-						 {
-						 	<COMMA> ident_list() <COLON> type() var_decl_linked()
-						 |{}
-						 }
 
 void const_decl() :	{}
 					{
-					  <CONST> <ID> <COLON> type() <EQUALS_SIGN> expression() <SEMI_COMMA>
+					  <CONST> <ID> <COLON> type() <EQUALS_SIGN> expression() (<COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() )* <SEMI_COMMA>
+					  {System.out.println("const decl");}
 					}
-
-void const_decl_linked() : {}
-							{
-							  <COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() const_decl_linked()
-							|{}							}					
 
 void function() : {}
 				  {
@@ -182,17 +155,20 @@ void function() : {}
 				    <BEGIN>
 				    decl()
 				    (statement() <SEMI_COMMA> )*
-				    <RETURN> (expression()|<EMPTY>) <SEMI_COMMA>
+				    <RETURN> (expression()|{}) <SEMI_COMMA>
 				    <END>
+				    {System.out.println("function");}
 				  }
 
 void param_list() :	{}
 					{
-					  (<ID> <COLON> type() (<COMMA> <ID> <COLON> type() )*|<EMPTY>/* empty string needed*/ )*					}
+					  (<ID><COLON> type() ( <COMMA> <ID> <COLON> type())* | {})
+					  {System.out.println("param list");}					}
 
 void type() : {}
 			{
 			  <INT> | <BOOL> | <VOID>
+			  {System.out.println("type");}
 			}
 
 void main_prog() : {}
@@ -202,81 +178,148 @@ void main_prog() : {}
 				     decl()
 				     (statement()<SEMI_COMMA>)*
 				     <END>
+				     {System.out.println(" main Program");}
 				   }
 
 void statement() : {}
 				   {
-					  <ID> <ASSIGN> expression()
-					| <ID> <LBR> arg_list() <RBR>
+					  <ID> (<ASSIGN> expression()|<LBR> arg_list() <RBR>)
 					| <BEGIN> (statement() <SEMI_COMMA> )* <END>
-					| <IF> conditon() <THEN> statement() <ELSE> statement()
-					| <WHILE> conditon() <DO> statement()
-					| <EMPTY> /*Empty String*/
+					| <IF> condition() <THEN> statement()<SEMI_COMMA> <ELSE> statement() /* dangleing else. */
+					| <WHILE> condition() <DO> statement()
+					| {}
+					{System.out.println("statement");}
 				   }
 
-void expression() :	{}
+void functionCall() :{}
+					 {
+					   <ID> <LBR> arg_list() < RBR>
+					   {System.out.println("function call");}
+					 }
+
+void expression() : {}
 					{
-					  fragment() ( (<PLUS_SIGN>|<MINUS_SIGN>|<MULT_SIGN>|<DIV_SIGN>) fragment() )*
-					| <LBR> expression() <RBR>
-					| <ID> <LBR> arg_list() < RBR>
-					}
-					
-void fragment() : {}
-				  {
-				    <ID>|< TRUE>|<FALSE>|<NUM>| (<PLUS_SIGN>|< MINUS_SIGN >) fragment()| expression()
-				  }
+					  LOOKAHEAD(2)
 
-/*
+					  functionCall()
+					| term() nextExpression()
+					| <LBR> expression() <RBR> 
+					  {System.out.println("expression");}					}
 
-void expression() :	{}
-					{
-					  fragment more() | expression more() // second case doesn't make sense
-					| <LBR> expression() <RBR>
-					| <ID> <LBR> arg_list() < RBR>
-					}
-Test cases:
+void nextExpression() : {} //bind + and - 
+						{
+						  <PLUS_SIGN> expression()
+						| <MINUS_SIGN> expression()
+						|{}
+						{System.out.println("next Expression");}
+						}
 
-(x+1) / 3
-7 + -2+3 = 
-7 +(-2 + 3)
-7 + -(2+3)
-
-(min(x, y) + 1) / 3
-min(x, y) + 1 / 3
-7 + (-min(x, y) + 3)
-7 + -min(x, y) + 3)
-
-
-void more() : {}
+void term() : {}
 			  {
-			    (<PLUS_SIGN>|<MINUS_SIGN>|<MULT_SIGN>|<DIV_SIGN>) (fragment()|expression()) more()
-			  |{}
+			    fragment() subExpression()
+			    {System.out.println("term");}
 			  }
+
+void subExpression() : {}
+					   {
+					     <MULT_SIGN> term()
+						|<DIV_SIGN> term()
+						|{}
+						{System.out.println("subExpression");}
+					   }
 
 void fragment() : {}
 				  {
 				    <ID>
+				  | <NUM>
 				  | <TRUE>
 				  | <FALSE>
-				  | <NUM>
-				  | (<PLUS_SIGN>|<MINUS_SIGN>) ( fragment()| expression() )
+				  | <PLUS_SIGN> ( fragment() | <LBR> expression() <RBR>)
+				  | <MINUS_SIGN>( fragment() |  <LBR> expression() <RBR>)
+				  {System.out.println("fragment");}
+				}
+			  
+
+/*
+void condition() : {}
+				   {
+				     <NOT> condition()
+				   	| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
+				   	| condition() (<AND>|<OR>) condition()
+				   	| functionCall()				   }
+/*
+
+	a condition can be a - !condition
+						 - expression followed by a relation to another expression 
+						 - a condition of true or false with and/or op in relation to another condition
+						 - a functionCall that could return true or false.
+
+						 a function call is already in an expression so can probably be removed.
+						 !condition must stay
+
+						 a condition could be an expression > expression so to handle the case expression > expression and ex!=ex you need a case
+
+						 take expression line out and call it something else
+*/
+ 
+void condition(): {}
+				  {
+				    <NOT> condition()
+				  | relationExpression() ( (<AND>|<OR>) condition() |{})
 				  }
 
-*/
-
-
-void conditon() : {}
+void relationExpression() : {}
+							{
+							 expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
+							 {System.out.println("relationExpression");}							} 
+/*
+void condition() : {}
 				   {
-				     <NOT> expression()
-				   	| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>|<AND>|<OR>) expression()
-				   	| <ID>				   }
+				     <NOT> condition()
 
+				   	| <LBR> (<NOT> expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
+							| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
+							)
+					  <RBR> (<AND>|<OR>) condition()
+					  
+					| LOOKAHEAD(2) term() nextExpression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>|<AND>|<OR>) condition()
+				   	| functionCall()      
+				   }
+
+
+
+
+
+
+
+
+void condition(): {}
+				  {
+				    <NOT> condition()
+				  | conditionPrime()				  }
+
+void conditionPrime() : {}
+						{
+						  //problem here with (condition) and (expression)
+						  						}
+
+
+
+
+
+
+
+
+
+*/				   
 void ident_list() : {}
 				 {
-				   <ID> (<COMMA> <ID>)* 
+				   <ID> (<COMMA> <ID>)*
+				   	 {System.out.println("ident_list");}
 				 }
 
 void arg_list() : {}
 				{
-				   (ident_list()|<EMPTY>)
+				   (ident_list()| {})
+				   	 {System.out.println("arg_list");}
 				}

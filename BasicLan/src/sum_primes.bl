@@ -19,18 +19,18 @@ begin
        i := 2;
        res := true;
 
-       while (i*i < x) and res = true
+       while (i*i < x) and res = true do
        begin
          if x - (x/i)*i = 0
          then
            begin
              res:= false;
              i := i + 1;
-           end
+           end;
          else
-           i : i + 1;
-       end
-    end
+           i := i + 1;
+       end;
+    end;
 
   return res; 
 end
@@ -43,17 +43,16 @@ begin
   sum := 0;
   i := 2;
 
-  while i <= N
+  while i <= N do
   begin
     if is_prime (i)           -- check if i is a prime number
     then
       sum := sum + 1;         -- add prime to running total
     else
       begin
-      end
-  end
+      end;
+  end;
 
   result := sum;
 
 end
-
