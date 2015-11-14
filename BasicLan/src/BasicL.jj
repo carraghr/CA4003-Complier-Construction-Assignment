@@ -119,23 +119,17 @@ TOKEN : { < OTHER : ~[]> }/* Anything that is not recognised so far.*/
 
 void program() : {}
 				 {
-				   decl()
+				   (decl())*
 				   (function())*
 				   main_prog()
 				   {System.out.println("Program");}				 }
 
 void decl() : {}
 			  {
-			    decl_type() decl()
-			  | {}
+			    var_decl()
+			  | const_decl()
 			  {System.out.println("decl");}
 			  }
-
-void decl_type() : {}
-				   {
-				     var_decl()
-				   | const_decl()
-				   {System.out.println("decl_type");}				   }
 
 void var_decl() : {}
 				{
@@ -153,7 +147,7 @@ void function() : {}
 				  {
 				    type() <ID> <LBR> param_list() <RBR>
 				    <BEGIN>
-				    decl()
+				    (decl())*
 				    (statement() <SEMI_COMMA> )*
 				    <RETURN> (expression()|{}) <SEMI_COMMA>
 				    <END>
@@ -175,22 +169,21 @@ void main_prog() : {}
 				   {
 				     <MAIN>
 				     <BEGIN>
-				     decl()
+				     (decl())*
 				     (statement()<SEMI_COMMA>)*
 				     <END>
 				     {System.out.println(" main Program");}
 				   }
 
 void statement() : {}
-				   {
-					  <ID> (<ASSIGN> expression()|<LBR> arg_list() <RBR>)
-					| <BEGIN> (statement() <SEMI_COMMA> )* <END>
-					| <IF> condition() <THEN> statement()<SEMI_COMMA> <ELSE> statement() /* dangleing else. */
-					| <WHILE> condition() <DO> statement()
-					| {}
-					{System.out.println("statement");}
-				   }
-
+						{
+						  <ID> (<ASSIGN> expression()|<LBR> arg_list() <RBR>)
+						| <BEGIN> (statement() <SEMI_COMMA> )* <END>
+						| <IF> condition() <THEN> statement() <SEMI_COMMA> <ELSE> statement()
+						| <WHILE> condition() <DO> statement()
+						| {}
+						{System.out.println("statement");}
+						}
 void functionCall() :{}
 					 {
 					   <ID> <LBR> arg_list() < RBR>
@@ -203,7 +196,6 @@ void expression() : {}
 
 					  functionCall()
 					| term() nextExpression()
-					| <LBR> expression() <RBR> 
 					  {System.out.println("expression");}					}
 
 void nextExpression() : {} //bind + and - 
@@ -217,12 +209,13 @@ void nextExpression() : {} //bind + and -
 void term() : {}
 			  {
 			    fragment() subExpression()
+			  | <LBR> expression() <RBR> subExpression()
 			    {System.out.println("term");}
 			  }
 
 void subExpression() : {}
 					   {
-					     <MULT_SIGN> term()
+					     <MULT_SIGN> term() 
 						|<DIV_SIGN> term()
 						|{}
 						{System.out.println("subExpression");}
@@ -234,84 +227,21 @@ void fragment() : {}
 				  | <NUM>
 				  | <TRUE>
 				  | <FALSE>
-				  | <PLUS_SIGN> ( fragment() | <LBR> expression() <RBR>)
-				  | <MINUS_SIGN>( fragment() |  <LBR> expression() <RBR>)
+				  | <PLUS_SIGN> ( fragment() | expression())
+				  | <MINUS_SIGN>( fragment() | expression())
 				  {System.out.println("fragment");}
 				}
 			  
-
-/*
-void condition() : {}
-				   {
-				     <NOT> condition()
-				   	| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
-				   	| condition() (<AND>|<OR>) condition()
-				   	| functionCall()				   }
-/*
-
-	a condition can be a - !condition
-						 - expression followed by a relation to another expression 
-						 - a condition of true or false with and/or op in relation to another condition
-						 - a functionCall that could return true or false.
-
-						 a function call is already in an expression so can probably be removed.
-						 !condition must stay
-
-						 a condition could be an expression > expression so to handle the case expression > expression and ex!=ex you need a case
-
-						 take expression line out and call it something else
-*/
- 
-void condition(): {}
-				  {
-				    <NOT> condition()
-				  | relationExpression() ( (<AND>|<OR>) condition() |{})
-				  }
-
 void relationExpression() : {}
 							{
-							 expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
-							 {System.out.println("relationExpression");}							} 
-/*
+							 expression() ( (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression() | {})
+							 {System.out.println("relationExpression");}							}
+
 void condition() : {}
-				   {
-				     <NOT> condition()
-
-				   	| <LBR> (<NOT> expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
-							| expression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression()
-							)
-					  <RBR> (<AND>|<OR>) condition()
-					  
-					| LOOKAHEAD(2) term() nextExpression() (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>|<AND>|<OR>) condition()
-				   	| functionCall()      
-				   }
-
-
-
-
-
-
-
-
-void condition(): {}
-				  {
-				    <NOT> condition()
-				  | conditionPrime()				  }
-
-void conditionPrime() : {}
-						{
-						  //problem here with (condition) and (expression)
-						  						}
-
-
-
-
-
-
-
-
-
-*/				   
+				   {				     <NOT> condition()
+				   | <LBR> relationExpression() <RBR> ( (<AND>|<OR>) condition() |{})
+				   |  relationExpression() ( (<AND>|<OR>) condition() |{})				   }
+				   				   
 void ident_list() : {}
 				 {
 				   <ID> (<COMMA> <ID>)*

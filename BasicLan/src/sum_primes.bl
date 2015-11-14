@@ -9,18 +9,22 @@ const N:int = 100;
 
 bool is_prime (x:int)
 begin
-  var i:int, res:bool;
+  var i:int, res:bool, temp:int;
 
   if x = 1 or x = 2
   then
+  	begin
     res := true;
-  else
+    temp := x - (x/i)*i;
+    end;
+  else --no ; at the end of this in the grammar
     begin
        i := 2;
        res := true;
 
        while (i*i < x) and res = true do
-       begin
+       	
+       	begin
          if x - (x/i)*i = 0
          then
            begin
@@ -29,7 +33,8 @@ begin
            end;
          else
            i := i + 1;
-       end;
+       	end;
+       	
     end;
 
   return res; 

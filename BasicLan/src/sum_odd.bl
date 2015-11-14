@@ -3,6 +3,7 @@
 */
 var result:int;
 const N:int = 100;
+
 bool is_odd (x:int)
 begin
 	var i:int, res:bool;
@@ -13,6 +14,7 @@ begin
 		res := false;
 	return res;
 end
+
 main
 begin
 	var i:int, sum:int;
