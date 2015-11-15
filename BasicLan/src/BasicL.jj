@@ -239,7 +239,7 @@ void relationExpression() : {}
 
 void condition() : {}
 				   {				     <NOT> condition()
-				   | <LBR> relationExpression() <RBR> ( (<AND>|<OR>) condition() |{})
+				   | <LBR> condition() <RBR> ( (<AND>|<OR>) condition() |{})
 				   |  relationExpression() ( (<AND>|<OR>) condition() |{})				   }
 				   				   
 void ident_list() : {}
