@@ -1,5 +1,6 @@
 /* sum_odd.bl
 	sample file designed by myself to test Parser.jj
+	
 */
 var result:int;
 const N:int = 100;
