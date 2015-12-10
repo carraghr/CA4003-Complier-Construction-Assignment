@@ -1,0 +1,281 @@
+/****************************************************
+*
+*	Section 1 - Options
+*
+*****************************************************/
+
+options{ JAVA_UNICODE_ESCAPE = true;
+		 MULTI=true;
+  		 VISITOR = true;
+  	   }
+
+/****************************************************
+*
+*	Section 2 - User Code
+*
+*****************************************************/
+
+PARSER_BEGIN(BasicL)
+
+public class BasicL{
+
+  	//Parser executions
+	public static void main(String [] args){
+
+
+		if(args.length != 1){
+		  
+		  System.out.println("BasicL Tokeniser: Usage is one of:");
+		  System.out.println("java BasicL < inputfile");
+		  System.out.println("OR");
+		  System.out.println("java BasicL inputfile");
+		  return;
+		}
+		else{
+			BasicL parser;
+			
+		  	try{
+				parser = new BasicL(new java.io.FileInputStream(args[0]));
+				ASTProgram root = parser.program();
+
+				System.out.println("Abstract Syntax Tree: ");
+				root.dump(" ");
+				
+		  	}catch(java.io.FileNotFoundException e){
+		    	System.err.println("File " + args[0] + " not found");
+		    	return;
+		  	}catch(ParseException e){
+		    	e.printStackTrace();
+		  	}
+		}
+		
+	}
+}
+PARSER_END(BasicL)
+/****************************************************
+*
+*	Section 3 - Token Definitions
+*
+*****************************************************/
+
+TOKEN_MGR_DECLS : {
+  static int commentNesting = 0;
+}
+
+SKIP : {  " " //Ignoring spaces/tabs/new lines
+		| "\t"
+		| "\n"
+		| "\r"
+		| "\f"
+}
+
+SKIP : { /* comments */
+		"/*"{commentNesting++;}:IN_COMMENT
+		|< "--" (~["\r", "\n"])* > //~["\n","\r"] matches any character except the new line characters
+}
+
+<IN_COMMENT> SKIP : { "/*" { commentNesting++; }
+					| "*/" { commentNesting--;
+		  		 			 if(commentNesting == 0)
+								SwitchTo(DEFAULT); //stops reading in a comment Allows for in line comments 
+			   			   }
+					|< ~[] > //takes any character
+}
+
+TOKEN :{ < AND : "and" > /*Keywords*/
+  		| < BOOL : "bool" >
+  		| < CONST : "const" >
+  		| < DO : "do">
+  		| < ELSE : "else" >
+  		| < FALSE : "false">
+  		| < IF : "if">
+  		| < INT : "int">
+  		| < MAIN : "main">
+  		| < NOT :"not">
+  		| < OR : "or">
+  		| < RETURN : "return">
+  		| < THEN : "then">
+  		| < TRUE : "true">
+  		| < VAR : "var">
+  		| < VOID : "void">
+  		| < WHILE : "while">
+  		| < BEGIN : "begin">
+  		| < END : "end">
+  }
+
+TOKEN : { < NUM : (< DIGIT>)+ > /* numbers and Identifiers */
+		| < #DIGIT : ["0" - "9"] >
+		| < ID : < LETTER > (["a"-"z","A"-"Z","0"-"9","_"])*>//letter first then letter|digit| underscore 
+  		| < #LETTER : ["a" - "z","A" - "Z"] >
+}
+
+TOKEN : { <PLUS_SIGN :"+"> /*Operators and relations*/
+		| < MINUS_SIGN :"-">
+		| < MULT_SIGN : "*">
+		| < DIV_SIGN : "/">
+		| < EQUALS_SIGN : "=">
+		| < NOT_EQUALS_SIGN :"!=">
+		| < LESS_THEN : "<">
+		| < MORE_THEN : ">">
+		| < LESS_THEN_EQ : "<=">
+		| < MORE_THEN_EQ : ">=">
+		| < LBR : "(">
+		| < RBR : ")">
+		| < COMMA : ",">
+		| < SEMI_COMMA : ";">
+		| < COLON : ":">
+		| < ASSIGN : ":=">
+}
+
+TOKEN : { < OTHER : ~[]> }/* Anything that is not recognised so far.*/
+
+/****************************************************
+*
+*	Section 4 - The Grammar
+*
+*****************************************************/
+
+ASTProgram program() #Program: {}
+					   {
+					     (decl())*
+					     (function_decl())*
+					     main_prog()
+					     {return jjtThis;}
+					   }
+
+void decl() #void : {}
+			  {
+			    var_decl() 
+			  | const_decl()
+			  }
+
+void var_decl() #var_decl : {}
+				{
+				   <VAR> ident_list() <COLON> type() (<COMMA> ident_list() <COLON> type())* <SEMI_COMMA>
+				}  
+void const_decl() #const_decl:	{}
+					{
+					  <CONST> id() <COLON> type() <EQUALS_SIGN> expression() (<COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() )* <SEMI_COMMA>
+					 
+					}
+
+void function_decl() #functionDecl: {}
+									{
+									  type() id() <LBR> param_list() <RBR>
+									  function_body()									}
+
+void function_body() #functionBody: {}
+				  {				    
+				    <BEGIN>
+				    (decl())*
+				    (statement() <SEMI_COMMA> )*
+				    <RETURN> (expression()|{}) <SEMI_COMMA>
+				    <END>
+				  }
+
+void param_list() #ParamList:{}
+					{
+					  (id()<COLON> type() ( <COMMA> id() <COLON> type())* | {})
+
+					}
+
+void type() #Type: {}
+			{
+			  <INT> {jjtThis.value = token;}
+			 |<BOOL> {jjtThis.value = token;}
+			 |<VOID> {jjtThis.value = token;}
+
+			}
+
+void main_prog() #Main: {}
+				   {
+				     <MAIN>
+				     <BEGIN>
+				     (decl())*
+				     (statement()<SEMI_COMMA>)*
+				     <END>
+
+				   }
+
+void statement() #void: {}
+						{
+						  id() (<ASSIGN> expression()|<LBR> arg_list() <RBR>)
+						| <BEGIN> (statement() <SEMI_COMMA> )* <END>
+						| <IF> condition() <THEN> statement() <SEMI_COMMA> <ELSE> statement()
+						| <WHILE> condition() <DO> statement()
+						| {}
+
+						}
+void functionCall() #functionCall:{}
+					 {
+					   id() <LBR> arg_list() < RBR>
+					 }
+
+void expression() #void: {}
+					{
+					  LOOKAHEAD(2)
+
+					  functionCall()
+					| term() subExpression()
+					}
+
+void subExpression() #subExpression: {} //bind + and - 
+						{
+						  <PLUS_SIGN> expression()
+						| <MINUS_SIGN> expression()
+						|{}
+						
+						}
+
+void term() #void: {}
+			  {
+			    fragment() MultDivExpression()
+			  | <LBR> expression() <RBR> MultDivExpression()
+			   
+			  }
+
+void MultDivExpression() #MultDivExpression: {}
+					   {
+					     <MULT_SIGN> term() 
+						|<DIV_SIGN> term()
+						|{}
+						
+					   }
+
+void fragment() #void: {}
+				  {
+				    <ID>
+				  | <NUM>
+				  | <TRUE>
+				  | <FALSE>
+				  | <PLUS_SIGN> ( fragment() | expression())
+				  | <MINUS_SIGN>( fragment() | expression())
+				  
+				}
+			  
+void relationExpression() #void: {}
+							{
+							 expression() ( (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression() | {})
+							}
+
+void condition() #Condition: {}
+				   {
+				     <NOT> condition()
+				   | <LBR> condition() <RBR> ( (<AND>|<OR>) condition() |{})
+				   |  relationExpression() ( (<AND>|<OR>) condition() |{})
+				   }
+				   				   
+void ident_list() #Ident_list: {}
+				 {
+				   id() (<COMMA> id())*
+				 }
+
+void arg_list() #Argument_List: {}
+				{
+				   ( id() (<COMMA> id())*| {})
+				}
+
+void id() #Id :{}
+					   {
+					     <ID>{jjtThis.value = token;}
+					   }
