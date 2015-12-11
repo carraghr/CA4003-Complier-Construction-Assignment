@@ -16,12 +16,12 @@ options{ JAVA_UNICODE_ESCAPE = true;
 *****************************************************/
 
 PARSER_BEGIN(BasicL)
-
+	import java.util.*;
+	
 public class BasicL{
 
   	//Parser executions
 	public static void main(String [] args){
-
 
 		if(args.length != 1){
 		  
@@ -35,11 +35,17 @@ public class BasicL{
 			BasicL parser;
 			
 		  	try{
+
 				parser = new BasicL(new java.io.FileInputStream(args[0]));
 				ASTProgram root = parser.program();
 
 				System.out.println("Abstract Syntax Tree: ");
 				root.dump(" ");
+
+				System.out.println();
+
+				
+				
 				
 		  	}catch(java.io.FileNotFoundException e){
 		    	System.err.println("File " + args[0] + " not found");
@@ -181,7 +187,7 @@ void param_list() #ParamList:{}
 
 void type() #Type: {}
 			{
-			  <INT> {jjtThis.value = token;}
+			  <INT>  {jjtThis.value = token;}
 			 |<BOOL> {jjtThis.value = token;}
 			 |<VOID> {jjtThis.value = token;}
 
@@ -219,10 +225,10 @@ void expression() #void: {}
 					| term() subExpression()
 					}
 
-void subExpression() #subExpression: {} //bind + and - 
+void subExpression() #void: {} //bind + and - 
 						{
-						  <PLUS_SIGN> expression()
-						| <MINUS_SIGN> expression()
+						  <PLUS_SIGN> expression() #PlusExpression(2)
+						| <MINUS_SIGN> expression()#MinusExpression(2)
 						|{}
 						
 						}
@@ -234,22 +240,20 @@ void term() #void: {}
 			   
 			  }
 
-void MultDivExpression() #MultDivExpression: {}
+void MultDivExpression() #void: {}
 					   {
-					     <MULT_SIGN> term() 
-						|<DIV_SIGN> term()
+					     <MULT_SIGN> term() #MultExpression(2)
+						|<DIV_SIGN> term() #DivExpression(2)
 						|{}
-						
 					   }
 
 void fragment() #void: {}
 				  {
-				    <ID>
-				  | <NUM>
-				  | <TRUE>
-				  | <FALSE>
-				  | <PLUS_SIGN> ( fragment() | expression())
-				  | <MINUS_SIGN>( fragment() | expression())
+				    id()
+				  | num()
+				  | bool()
+				  | <PLUS_SIGN> ( fragment() | expression())#addFragment
+				  | <MINUS_SIGN>( fragment() | expression())#subFragment
 				  
 				}
 			  
@@ -258,11 +262,11 @@ void relationExpression() #void: {}
 							 expression() ( (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression() | {})
 							}
 
-void condition() #Condition: {}
+void condition() #condition: {}
 				   {
 				     <NOT> condition()
 				   | <LBR> condition() <RBR> ( (<AND>|<OR>) condition() |{})
-				   |  relationExpression() ( (<AND>|<OR>) condition() |{})
+				   | relationExpression() ( (<AND>|<OR>) condition() |{})
 				   }
 				   				   
 void ident_list() #Ident_list: {}
@@ -276,6 +280,16 @@ void arg_list() #Argument_List: {}
 				}
 
 void id() #Id :{}
-					   {
-					     <ID>{jjtThis.value = token;}
-					   }
+			   {
+			     <ID>{jjtThis.value = token;}
+			   }
+
+void num() #Num: {}
+				{
+				  <NUM> {jjtThis.value = token;}
+				}
+
+void bool() #Bool:{}				  {
+				    <TRUE> {jjtThis.value = token;}
+				  | <FALSE> {jjtThis.value = token;}
+				  }  
