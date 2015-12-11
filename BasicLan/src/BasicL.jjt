@@ -16,7 +16,8 @@ options{ JAVA_UNICODE_ESCAPE = true;
 *****************************************************/
 
 PARSER_BEGIN(BasicL)
-	import java.util.*;
+
+import java.util.*;
 	
 public class BasicL{
 
@@ -44,10 +45,7 @@ public class BasicL{
 
 				System.out.println();
 
-				
-				
-				
-		  	}catch(java.io.FileNotFoundException e){
+			}catch(java.io.FileNotFoundException e){
 		    	System.err.println("File " + args[0] + " not found");
 		    	return;
 		  	}catch(ParseException e){
@@ -81,56 +79,55 @@ SKIP : { /* comments */
 }
 
 <IN_COMMENT> SKIP : { "/*" { commentNesting++; }
-					| "*/" { commentNesting--;
-		  		 			 if(commentNesting == 0)
-								SwitchTo(DEFAULT); //stops reading in a comment Allows for in line comments 
-			   			   }
-					|< ~[] > //takes any character
+		    | "*/" { commentNesting--;
+		  	   if(commentNesting == 0)
+				SwitchTo(DEFAULT); //stops reading in a comment Allows for in line comments 
+	     	   	   }
+  		    |< ~[] > //takes any character
 }
 
 TOKEN :{ < AND : "and" > /*Keywords*/
-  		| < BOOL : "bool" >
-  		| < CONST : "const" >
-  		| < DO : "do">
-  		| < ELSE : "else" >
-  		| < FALSE : "false">
-  		| < IF : "if">
-  		| < INT : "int">
-  		| < MAIN : "main">
-  		| < NOT :"not">
-  		| < OR : "or">
-  		| < RETURN : "return">
-  		| < THEN : "then">
-  		| < TRUE : "true">
-  		| < VAR : "var">
-  		| < VOID : "void">
-  		| < WHILE : "while">
-  		| < BEGIN : "begin">
-  		| < END : "end">
+  	| < BOOL : "bool" >
+  	| < CONST : "const" >
+  	| < DO : "do">
+  	| < ELSE : "else" >
+  	| < FALSE : "false">
+  	| < IF : "if">
+  	| < INT : "int">
+  	| < MAIN : "main">
+  	| < NOT :"not">
+  	| < OR : "or">
+  	| < RETURN : "return">
+  	| < THEN : "then">
+  	| < TRUE : "true">
+  	| < VAR : "var">
+  	| < VOID : "void">
+  	| < WHILE : "while">
+  	| < BEGIN : "begin">
+  	| < END : "end">
   }
 
 TOKEN : { < NUM : (< DIGIT>)+ > /* numbers and Identifiers */
-		| < #DIGIT : ["0" - "9"] >
-		| < ID : < LETTER > (["a"-"z","A"-"Z","0"-"9","_"])*>//letter first then letter|digit| underscore 
-  		| < #LETTER : ["a" - "z","A" - "Z"] >
-}
+	| < #DIGIT : ["0" - "9"] >
+	| < ID : < LETTER > (["a"-"z","A"-"Z","0"-"9","_"])*>//letter first then letter|digit| underscore 
+	| < #LETTER : ["a" - "z","A" - "Z"] >
 
 TOKEN : { <PLUS_SIGN :"+"> /*Operators and relations*/
-		| < MINUS_SIGN :"-">
-		| < MULT_SIGN : "*">
-		| < DIV_SIGN : "/">
-		| < EQUALS_SIGN : "=">
-		| < NOT_EQUALS_SIGN :"!=">
-		| < LESS_THEN : "<">
-		| < MORE_THEN : ">">
-		| < LESS_THEN_EQ : "<=">
-		| < MORE_THEN_EQ : ">=">
-		| < LBR : "(">
-		| < RBR : ")">
-		| < COMMA : ",">
-		| < SEMI_COMMA : ";">
-		| < COLON : ":">
-		| < ASSIGN : ":=">
+	| < MINUS_SIGN :"-">
+	| < MULT_SIGN : "*">
+	| < DIV_SIGN : "/">
+	| < EQUALS_SIGN : "=">
+	| < NOT_EQUALS_SIGN :"!=">
+	| < LESS_THEN : "<">
+	| < MORE_THEN : ">">
+	| < LESS_THEN_EQ : "<=">
+	| < MORE_THEN_EQ : ">=">
+	| < LBR : "(">
+	| < RBR : ")">
+	| < COMMA : ",">
+	| < SEMI_COMMA : ";">
+	| < COLON : ":">
+	| < ASSIGN : ":=">
 }
 
 TOKEN : { < OTHER : ~[]> }/* Anything that is not recognised so far.*/
@@ -142,33 +139,35 @@ TOKEN : { < OTHER : ~[]> }/* Anything that is not recognised so far.*/
 *****************************************************/
 
 ASTProgram program() #Program: {}
-					   {
-					     (decl())*
-					     (function_decl())*
-					     main_prog()
-					     {return jjtThis;}
-					   }
+	  	   	       {
+				     (decl())*
+				     (function_decl())*
+				     main_prog()
+				     {return jjtThis;}
+			       }
 
 void decl() #void : {}
-			  {
-			    var_decl() 
-			  | const_decl()
-			  }
+		    {
+		    	var_decl() 
+		  	| const_decl()
+		     }
 
 void var_decl() #var_decl : {}
-				{
-				   <VAR> ident_list() <COLON> type() (<COMMA> ident_list() <COLON> type())* <SEMI_COMMA>
-				}  
+			    {
+			   	<VAR> ident_list() <COLON> type() (<COMMA> ident_list() <COLON> type())* <SEMI_COMMA>
+			    }
+  
 void const_decl() #const_decl:	{}
-					{
-					  <CONST> id() <COLON> type() <EQUALS_SIGN> expression() (<COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() )* <SEMI_COMMA>
+				{
+				  <CONST> id() <COLON> type() <EQUALS_SIGN> expression() (<COMMA> <ID> <COLON> type() <EQUALS_SIGN> expression() )* <SEMI_COMMA>
 					 
-					}
+				}
 
 void function_decl() #functionDecl: {}
-									{
-									  type() id() <LBR> param_list() <RBR>
-									  function_body()									}
+				    {
+				    	type() id() <LBR> param_list() <RBR>
+					function_body()
+				    }
 
 void function_body() #functionBody: {}
 				  {				    
@@ -180,94 +179,87 @@ void function_body() #functionBody: {}
 				  }
 
 void param_list() #ParamList:{}
-					{
-					  (id()<COLON> type() ( <COMMA> id() <COLON> type())* | {})
-
-					}
+				{
+				  (id()<COLON> type() ( <COMMA> id() <COLON> type())* | {})
+				}
 
 void type() #Type: {}
 			{
 			  <INT>  {jjtThis.value = token;}
 			 |<BOOL> {jjtThis.value = token;}
 			 |<VOID> {jjtThis.value = token;}
-
 			}
 
 void main_prog() #Main: {}
-				   {
-				     <MAIN>
-				     <BEGIN>
-				     (decl())*
-				     (statement()<SEMI_COMMA>)*
-				     <END>
-
-				   }
+			{
+		     	   <MAIN>
+			   <BEGIN>
+			   (decl())*
+			   (statement()<SEMI_COMMA>)*
+			   <END>
+			}
 
 void statement() #void: {}
-						{
-						  id() (<ASSIGN> expression()|<LBR> arg_list() <RBR>)
-						| <BEGIN> (statement() <SEMI_COMMA> )* <END>
-						| <IF> condition() <THEN> statement() <SEMI_COMMA> <ELSE> statement()
-						| <WHILE> condition() <DO> statement()
-						| {}
+			{
+			  id() (<ASSIGN> expression()|<LBR> arg_list() <RBR>)
+			| <BEGIN> (statement() <SEMI_COMMA> )* <END>
+			| <IF> condition() <THEN> statement() <SEMI_COMMA> <ELSE> statement()
+			| <WHILE> condition() <DO> statement()
+			| {}
+			}
 
-						}
 void functionCall() #functionCall:{}
-					 {
-					   id() <LBR> arg_list() < RBR>
-					 }
+				 {
+				   id() <LBR> arg_list() < RBR>
+				 }
 
 void expression() #void: {}
-					{
-					  LOOKAHEAD(2)
-
-					  functionCall()
-					| term() subExpression()
-					}
+			{
+			  LOOKAHEAD(2)
+			  functionCall()
+			| term() subExpression()
+			}
 
 void subExpression() #void: {} //bind + and - 
-						{
-						  <PLUS_SIGN> expression() #PlusExpression(2)
-						| <MINUS_SIGN> expression()#MinusExpression(2)
-						|{}
-						
-						}
+     			    {
+				<PLUS_SIGN> expression() #PlusExpression(2)
+			    | 	<MINUS_SIGN> expression()#MinusExpression(2)
+			    |{}
+			    }
 
 void term() #void: {}
 			  {
 			    fragment() MultDivExpression()
 			  | <LBR> expression() <RBR> MultDivExpression()
-			   
 			  }
 
 void MultDivExpression() #void: {}
-					   {
-					     <MULT_SIGN> term() #MultExpression(2)
-						|<DIV_SIGN> term() #DivExpression(2)
-						|{}
-					   }
+				{
+				    <MULT_SIGN> term() #MultExpression(2)
+				|<DIV_SIGN> term() #DivExpression(2)
+				|{}
+				}
 
 void fragment() #void: {}
-				  {
-				    id()
-				  | num()
-				  | bool()
-				  | <PLUS_SIGN> ( fragment() | expression())#addFragment
-				  | <MINUS_SIGN>( fragment() | expression())#subFragment
-				  
-				}
+		       {
+			    id()
+		  	| num()
+			| bool()
+			| <PLUS_SIGN> ( fragment() | expression())#addFragment
+			| <MINUS_SIGN>( fragment() | expression())#subFragment
+			}
 			  
 void relationExpression() #void: {}
-							{
-							 expression() ( (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression() | {})
-							}
+				 {
+				   expression() ( (<EQUALS_SIGN>|<NOT_EQUALS_SIGN>|<LESS_THEN>|<MORE_THEN>|<LESS_THEN_EQ>|<MORE_THEN_EQ>) expression() | {})
+				 }
 
 void condition() #condition: {}
-				   {
-				     <NOT> condition()
-				   | <LBR> condition() <RBR> ( (<AND>|<OR>) condition() |{})
-				   | relationExpression() ( (<AND>|<OR>) condition() |{})
-				   }
+			     {
+			        <NOT> condition()
+			     | <LBR> condition() <RBR> ( (<AND>|<OR>) condition() |{})
+			     | relationExpression() ( (<AND>|<OR>) condition() |{})
+			     }
 				   				   
 void ident_list() #Ident_list: {}
 				 {
@@ -280,16 +272,18 @@ void arg_list() #Argument_List: {}
 				}
 
 void id() #Id :{}
-			   {
-			     <ID>{jjtThis.value = token;}
-			   }
+	       {
+		  <ID>{jjtThis.value = token;}
+	       }
 
 void num() #Num: {}
-				{
-				  <NUM> {jjtThis.value = token;}
-				}
+		 {
+		  <NUM> {jjtThis.value = token;}
+		 }
 
-void bool() #Bool:{}				  {
-				    <TRUE> {jjtThis.value = token;}
-				  | <FALSE> {jjtThis.value = token;}
-				  }  
+void bool() #Bool:{}
+		  {
+		    <TRUE> {jjtThis.value = token;}
+		  | <FALSE> {jjtThis.value = token;}
+		  }
+  
