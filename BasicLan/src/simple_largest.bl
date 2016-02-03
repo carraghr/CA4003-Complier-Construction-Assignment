@@ -1,0 +1,43 @@
+/*
+
+This is a comment
+*/
+
+--simple language
+
+var result:int;
+const MyConst:int = 10;
+
+bool is_largest(x:int)	--largest is true if x is larger than integer
+begin
+	var integer:int,largest:bool;
+	if x > integer
+		then
+		largest := true;
+	else	
+		largest := false;
+	return largest;
+end
+main
+begin
+
+	var i:int, num:int;
+	num := 5;
+	i:=1;
+	
+	while i <= N do
+	begin
+		if is_largest(i)
+		then 
+			num := i;
+		else	
+			begin
+				num := 5;
+			end;
+		
+	end;
+	--integer := 5;
+	result := num;
+	
+
+end --end of my simple language

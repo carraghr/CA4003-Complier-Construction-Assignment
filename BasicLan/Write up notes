@@ -1,0 +1,6 @@
+Write up for second assignment notes
+
+9/12/15 - got AST working however in paramlist id is not coming up so Im going to add an id production rule so that x with turn up on the AST 
+
+10/12/15 - need to start replacing <ID>, <INT>, and <BOOL> with production rules so that I can add the values into the symbol table.
+		 - 
